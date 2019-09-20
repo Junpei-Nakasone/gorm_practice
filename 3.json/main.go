@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo"
 )
 
+// jsonをUnmarshalするためのstruct
 type User struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
@@ -25,6 +26,7 @@ func addUser(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "")
 	}
 
+	// ReadAllしたHTTPリクエストのbをuseのstructに格納
 	err = json.Unmarshal(b, &user)
 	if err != nil {
 		return c.String(http.StatusBadRequest, "")
