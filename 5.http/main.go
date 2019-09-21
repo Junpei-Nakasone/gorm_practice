@@ -27,10 +27,10 @@ func loadPage(title string) (*Page, error) {
 		return nil, err
 	}
 	// Pageのアドレスを＆で指定し、変数で中身を特定してreturnする？
-
 	return &Page{Title: title, Body: body}, nil
 }
 
+//
 func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 	t, _ := template.ParseFiles(tmpl + ".html")
 	t.Execute(w, p)
