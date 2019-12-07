@@ -12,9 +12,24 @@ import (
 )
 
 type User struct {
-	gorm.Model
-	Name  string
+	Name  string `json:"name"`
 	Email string
+}
+
+type RequestParams struct {
+	WhereList []WhereColumnList `json:"where_column_list"`
+	OrderList []OrderColumnList `json:"order_list"`
+	Limit     int               `json:"limit"`
+}
+
+type WhereColumnList struct {
+	WhereName  string `json:"where_name"`
+	WhereParam string `json:"where_param"`
+}
+
+type OrderColumnList struct {
+	OrderName  string `json:"order_name"`
+	OrderParam string `json:"order_param"`
 }
 
 func allUsers(w http.ResponseWriter, r *http.Request) {
@@ -97,11 +112,30 @@ func selectUsers(w http.ResponseWriter, r *http.Request) {
 
 	var users []User
 
+	var params []RequestParams
 	// メソッドチェーンで繋ぐ
-	tx := db.Where("Name = ?", "test1")
 
-	tx = tx.Order("Email desc")
+	// WhereColumnList := params[0].WhereList
+	// whereName := WhereColumnList[0].WhereName
+	// WhereParam := WhereColumnList[0].WhereParam
 
+	limit := params[0].Limit
+	OrderColumnList := params[0].OrderList
+
+	// Order条件の長さを変数OrderLengthに格納できる？
+	OrderLength := len(OrderColumnList)
+
+	// for文に入る前に変数txを宣言し、即時メソッドを実行するまでtxに検索条件を足していく
+	tx := db.Limit(limit)
+
+	for i := 0; i < OrderLength; i++ {
+		OrderName := OrderColumnList[i].OrderName
+		OrderParam := OrderColumnList[i].OrderParam
+
+		tx = db.Order(OrderName[i] + OrderParam[i])
+	}
+
+	// 検索条件を格納した変数txで&users構造体に即時メソッドを実行
 	tx.Find(&users)
 
 	fmt.Println("{}", users)
@@ -116,7 +150,7 @@ func handleRequests() {
 	myRouter.HandleFunc("/user/{name}", deleteUser).Methods("DELETE")
 	myRouter.HandleFunc("/user/{name}/{email}", updateUser).Methods("PUT")
 	myRouter.HandleFunc("/user/{name}/{email}", newUser).Methods("POST")
-	myRouter.HandleFunc("/select", selectUsers).Methods("GET")
+	myRouter.HandleFunc("/select", selectUsers).Methods("POST")
 	log.Fatal(http.ListenAndServe(":8081", myRouter))
 }
 
