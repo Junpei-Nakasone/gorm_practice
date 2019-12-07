@@ -88,12 +88,35 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Successfully Updated User")
 }
 
+func selectUsers(w http.ResponseWriter, r *http.Request) {
+	db, err := gorm.Open("sqlite3", "test.db")
+	if err != nil {
+		panic("failed to connect database")
+	}
+	defer db.Close()
+
+	var users []User
+
+	// メソッドチェーンで繋ぐ
+	tx := db.Where("Name = ?", "test1")
+
+	tx = tx.Order("Email desc")
+
+	tx.Find(&users)
+
+	fmt.Println("{}", users)
+
+	json.NewEncoder(w).Encode(users)
+
+}
+
 func handleRequests() {
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/users", allUsers).Methods("GET")
 	myRouter.HandleFunc("/user/{name}", deleteUser).Methods("DELETE")
 	myRouter.HandleFunc("/user/{name}/{email}", updateUser).Methods("PUT")
 	myRouter.HandleFunc("/user/{name}/{email}", newUser).Methods("POST")
+	myRouter.HandleFunc("/select", selectUsers).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8081", myRouter))
 }
 
