@@ -1,118 +1,42 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
-	"net/http"
-
-	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"log"
 )
 
-type User struct {
-	gorm.Model
-	Name  string
-	Email string
-}
+const (
+	// データベース
+	Dialect = "mysql"
 
-func allUsers(w http.ResponseWriter, r *http.Request) {
-	db, err := gorm.Open("sqlite3", "test.db")
+	// ユーザー名
+	DBUser = "user1"
+
+	// パスワード
+	DBPass = "Password_01"
+
+	// プロトコル
+	DBProtocol = "tcp(127.0.0.1:3306)"
+
+	// DB名
+	DBName = "go_sample"
+)
+
+func connectGorm() *gorm.DB {
+	connectTemplate := "%s:%s@%s/%s"
+	connect := fmt.Sprintf(connectTemplate, DBUser, DBPass, DBProtocol, DBName)
+	db, err := gorm.Open(Dialect, connect)
+
 	if err != nil {
-		panic("failed to connect database")
+		log.Println(err.Error())
 	}
-	defer db.Close()
 
-	var users []User
-	db.Find(&users)
-	fmt.Println("{}", users)
-
-	json.NewEncoder(w).Encode(users)
-}
-
-func newUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("New User Endpoint Hit")
-
-	db, err := gorm.Open("sqlite3", "test.db")
-	if err != nil {
-		panic("failed to connect database")
-	}
-	defer db.Close()
-
-	vars := mux.Vars(r)
-	name := vars["name"]
-	email := vars["email"]
-
-	fmt.Println(name)
-	fmt.Println(email)
-
-	db.Create(&User{Name: name, Email: email})
-	fmt.Fprintf(w, "New User Successfully Created")
-}
-
-func deleteUser(w http.ResponseWriter, r *http.Request) {
-	db, err := gorm.Open("sqlite3", "test.db")
-	if err != nil {
-		panic("failed to connect database")
-	}
-	defer db.Close()
-
-	vars := mux.Vars(r)
-	name := vars["name"]
-
-	var user User
-	db.Where("name = ?", name).Find(&user)
-	db.Delete(&user)
-
-	fmt.Fprintf(w, "Successfully Deleted User")
-}
-
-func updateUser(w http.ResponseWriter, r *http.Request) {
-	db, err := gorm.Open("sqlite3", "test.db")
-	if err != nil {
-		panic("failed to connect database")
-	}
-	defer db.Close()
-
-	vars := mux.Vars(r)
-	name := vars["name"]
-	email := vars["email"]
-
-	var user User
-	db.Where("name = ?", name).Find(&user)
-
-	user.Email = email
-
-	db.Save(&user)
-	fmt.Fprintf(w, "Successfully Updated User")
-}
-
-func handleRequests() {
-	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.HandleFunc("/users", allUsers).Methods("GET")
-	myRouter.HandleFunc("/user/{name}", deleteUser).Methods("DELETE")
-	myRouter.HandleFunc("/user/{name}/{email}", updateUser).Methods("PUT")
-	myRouter.HandleFunc("/user/{name}/{email}", newUser).Methods("POST")
-	log.Fatal(http.ListenAndServe(":8081", myRouter))
-}
-
-func initialMigration() {
-	db, err := gorm.Open("sqlite3", "test.db")
-	if err != nil {
-		fmt.Println(err.Error())
-		panic("failed to connect database")
-	}
-	defer db.Close()
-
-	// Migrate the schema
-	db.AutoMigrate(&User{})
+	return db
 }
 
 func main() {
-	fmt.Println("Go ORM Tutorial")
-
-	initialMigration()
-	// Handle Subsequent requests
-	handleRequests()
+	db := connectGorm()
+	defer db.Close()
 }
